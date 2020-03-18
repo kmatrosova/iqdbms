@@ -8,7 +8,7 @@
 
 3. Go to the folder location in your terminal and run the Flask server:
 
-   - cd whateveryourpathis/iqdbms
+   - cd whateveryourpathis/iqdbms-master
    - python views.py
 
 4. You can now go to http://localhost:5000/ in your browser to run the app
