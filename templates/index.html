@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="">
+    <title>Connexion</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"> </script>
+    <!--script type=text/javascript> $(function() { $("#mybutton").click(function (event) {
+      $.getJSON('/SomeFunction', { },
+      function(data) {
+          alert("hey");
+          window.location.href = "http://localhost:5000/results";
+      });
+      return false; }); }); </script-->
+
+
+
+
+</head>
+
+<body>
+
+  <input class="center" type="file" id="files" name="files[]" accept=".csv"/>
+  <output class="center" id="list"></output>
+
+  <a><button  class="center" id = "mybutton" disabled>Lancer le script</button></a>
+
+  <div id="loading" class="center" hidden>
+    Processing your data ...
+    <div id="loader" class="center" hidden></div>
+  </div>
+
+
+  <script>
+
+    function handleFileSelect(evt) {
+      var f = evt.target.files[0]; // FileList object
+      var output = [];
+      var tmppath = URL.createObjectURL(event.target.files[0]);
+
+      output.push('<strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
+                    f.size, ' bytes, last modified: ',
+                    f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+                    '');
+
+      document.getElementById('list').innerHTML = output.join('');
+
+      var reader = new FileReader();
+      reader.onload = function(e){
+
+          $.ajax({
+                      url:"/uploadcsv",
+                      type:'POST',
+                      data:e.target.result,
+                      processData: false, // important
+                      contentType: false, // important
+                      enctype: 'multipart/form-data',
+                      error:function(){
+                          console.log("upload error")
+                      },
+                      success:function(data){
+                          console.log(data)
+                          console.log("upload success")
+                      }
+                  })
+          document.getElementById("mybutton").disabled = false;
+      };
+      reader.readAsArrayBuffer(f);
+    }
+
+    document.getElementById('files').addEventListener('change', handleFileSelect, false);
+
+    $("#mybutton").click(function(){
+
+      document.getElementById("mybutton").disabled = true;
+      document.getElementById("loading").hidden = false;
+      document.getElementById("loader").hidden = false;
+      document.getElementById("files").disabled = true;
+
+      $.getJSON( "/SomeFunction", function() {
+        alert( "success" );
+      })
+        .always(function() {
+          window.location.href = "http://localhost:5000/results";
+        });
+
+    });
+
+
+
+
+
+  </script>
+
+  <!--input type = "button" id = "mybutton" value = "Click Here" /-->
+
+
+
+
+</body>
+
+</html>

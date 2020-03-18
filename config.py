@@ -1,0 +1,3 @@
+SECRET_KEY ='\x8b\x07\xa9/\xd4\x99BD\xa6\x96\xcbX'
+
+DZ_APP_ID = 393304
