@@ -2,9 +2,17 @@ from flask import Flask, render_template, redirect, url_for
 from flask_cors import CORS, cross_origin
 import os
 from flask import request
-
+from flask_pymongo import PyMongo
+from pymongo import MongoClient
+import pprint
 
 app = Flask(__name__)
+app.config["MONGO_URI"] = "mongodb://localhost:27017/csv2tab"
+mongo = PyMongo(app)
+client = MongoClient()
+db = client.csv2tab
+
+
 CORS(app)
 
 
@@ -41,9 +49,21 @@ def SomeFunction():
     os.system("python script.py")
     return "True"
 
-@app.route('/results')
+@app.route('/results',methods=['GET','POST'])
 def results():
-    return render_template('results.html')
+    tables_names = mongo.db.list_collection_names()
+    all_tables = {}
+    for t in tables_names:
+        if t != "ddre":
+    #    all_tables[t] = (db[t].find())
+    #print(all_tables)
+            my_table = {}
+            for i, r in enumerate(db[t].find()):
+            #    pprint.pprint(r)
+                r.pop('_id')
+                my_table["r"+str(i)] = r
+            all_tables[t] = my_table
+    return render_template("results.html", all_tables=all_tables)
 
 if __name__ == "__main__":
         app.run()

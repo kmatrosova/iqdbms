@@ -35,7 +35,7 @@ for i in range (0, nb_col):
     col_names.append("col_"+ str(i));
 
 
-collection = db['ddre']
+
 new_posts = []
 
 for r in range (0, nb_rows):
@@ -69,7 +69,6 @@ for i in range (1, nb_col+1):
 
 # Premiere table: on eclate le fichier csv
 
-collection = db['first-table']
 new_posts = []
 
 for r in range (0, nb_rows):
@@ -201,7 +200,6 @@ print("Column tables created...")
 
 # Création de la métatable
 
-collection = db['metatable']
 new_posts = []
 
 for c in range (0, nb_col):
@@ -295,7 +293,86 @@ for t in date_tables:
                     if split_date[1] in months[i]:
                         split_date[1] = str(i+1)
 
-            col_tables[int(re.findall(r'\d+', t)[0])-1].update_one({'_id': r['_id']},{'$set': {'new_value': split_date[0]+"-"+split_date[1]+"-"+split_date[2]}}, upsert=False)
+            col_tables[int(re.findall(r'\d+', t)[0])-1].update_one({'_id': r['_id']},{'$set': {'new_value': split_date[0]+"-"+split_date[1]+"-"+split_date[2],
+                                                                                                     'sem_sub_type': "DATE"}}, upsert=False)
+
+for d in date_tables:
+    db.metatable.update_one({"table_name": d},{'$set': {'dom_sem_sub_type': "DATE"}}, upsert=False)
+
+
+# Homogénisation des poids
+
+weight = db.metatable.find({"dom_sem_type": "WEIGHT"})
+weight_tables = []
+
+for w in weight:
+    weight_tables.append(w["table_name"])
+
+for t in weight_tables:
+    dom_sem_sub_type = db.metatable.find_one({"table_name": t})['dom_sem_sub_type']
+    for r in col_tables[int(re.findall(r'\d+', t)[0])-1].find():
+
+        if r['old_value'] != "":
+
+            split_weigth = r['old_value'].split(' ')
+
+            if r['sem_sub_type'] == "WEIGHT_FR_G" and dom_sem_sub_type == "WEIGHT_FR_KG":
+                new_value = str(round(float(split_weigth[0].replace(',', '.'))/1000, 4)).replace('.', ',') + " KG"
+                col_tables[int(re.findall(r'\d+', t)[0])-1].update_one({'_id': r['_id']},{'$set': {'new_value': new_value, 'sem_sub_type': "WEIGHT_FR_KG"}}, upsert=False)
+
+            elif r['sem_sub_type'] == "WEIGHT_FR_KG" and dom_sem_sub_type == "WEIGHT_FR_G":
+                new_value = str(round(float(split_weigth[0].replace(',', '.'))*1000 , 4)).replace('.', ',') + " G"
+                col_tables[int(re.findall(r'\d+', t)[0])-1].update_one({'_id': r['_id']},{'$set': {'new_value': new_value, 'sem_sub_type': "WEIGHT_FR_G"}}, upsert=False)
+
+
+# Homogénisation des températures
+
+temp = db.metatable.find({"dom_sem_type": "TEMPERATURE"})
+temp_tables = []
+
+for t in temp:
+    temp_tables.append(t["table_name"])
+
+for t in temp_tables:
+    dom_sem_sub_type = db.metatable.find_one({"table_name": t})['dom_sem_sub_type']
+    for r in col_tables[int(re.findall(r'\d+', t)[0])-1].find():
+
+        if r['old_value'] != "":
+
+            split_temp = r['old_value'].split(' ')
+
+            if r['sem_sub_type'] == "TEMPERATURE_CELSIUS" and dom_sem_sub_type == "TEMPERATURE_FAHRENHEIT":
+                new_value = str(round((float(split_temp[0].replace(',', '.')) * 9/5) + 32 , 4)).replace('.', ',')+ " °F"
+                col_tables[int(re.findall(r'\d+', t)[0])-1].update_one({'_id': r['_id']},{'$set': {'new_value': new_value, 'sem_sub_type': "TEMPERATURE_FAHRENHEIT"}}, upsert=False)
+
+            elif r['sem_sub_type'] == "TEMPERATURE_FAHRENHEIT" and dom_sem_sub_type == "TEMPERATURE_CELSIUS":
+                new_value = str(round((float(split_temp[0].replace(',', '.')) - 32) * 5/9, 4)).replace('.', ',') + " °C"
+                col_tables[int(re.findall(r'\d+', t)[0])-1].update_one({'_id': r['_id']},{'$set': {'new_value': new_value, 'sem_sub_type': "TEMPERATURE_CELSIUS"}}, upsert=False)
+
+
+# Homogénisation des longueurs
+
+size = db.metatable.find({"dom_sem_type": "SIZEDISTANCE_LENGTH"})
+size_tables = []
+
+for s in size:
+    size_tables.append(s["table_name"])
+
+for t in size_tables:
+    dom_sem_sub_type = db.metatable.find_one({"table_name": t})['dom_sem_sub_type']
+    for r in col_tables[int(re.findall(r'\d+', t)[0])-1].find():
+
+        if r['old_value'] != "":
+
+            split_size = r['old_value'].split(' ')
+
+            if r['sem_sub_type'] == "SIZEDISTANCE_LENGTH_FR_M" and dom_sem_sub_type == "SIZEDISTANCE_LENGTH_FR_CM":
+                new_value = str(round(float(split_size[0].replace(',', '.'))*1000, 4)).replace('.', ',') + " CM"
+                col_tables[int(re.findall(r'\d+', t)[0])-1].update_one({'_id': r['_id']},{'$set': {'new_value': new_value, 'sem_sub_type': "SIZEDISTANCE_LENGTH_FR_CM"}}, upsert=False)
+
+            elif r['sem_sub_type'] == "SIZEDISTANCE_LENGTH_FR_CM" and dom_sem_sub_type == "SIZEDISTANCE_LENGTH_FR_M":
+                new_value = str(round(float(split_size[0].replace(',', '.'))/1000, 4)).replace('.', ',') + " M"
+                col_tables[int(re.findall(r'\d+', t)[0])-1].update_one({'_id': r['_id']},{'$set': {'new_value': new_value, 'sem_sub_type': "SIZEDISTANCE_LENGTH_FR_M"}}, upsert=False)
 
 
 
@@ -324,11 +401,11 @@ for c in range (0, nb_col):
                         if r['syn_type'] != my_types[0]:
                             col_tables[c].update_one({'_id': r['_id']},{'$set': {'anomaly': '<SYN Anomaly>',
                                                                                  'new_value': r['old_value']+'<SYN Anomaly>'}}, upsert=False)
+
 print("Anomalies detection and homogenisation completed...")
 
 # Fusion des données nettoyées
 
-collection = db['metatable']
 new_posts = []
 
 for c in range (0, nb_col):
@@ -354,18 +431,26 @@ for c in range (0, nb_col):
         for i, r in enumerate(col_tables[c].find()):
             new_posts[i].update({col_name : r['new_value']})
 
-second_table = db.second_table.insert_many(new_posts)
+clean_table = db.clean_table.insert_many(new_posts)
 
 print("Second table created...")
 
 
 # Création d'une clé unique, détection et suppression des doubles
 
-for r in db.second_table.find():
+new_posts = []
+
+for r in db.clean_table.find():
+    new_posts.append(r)
+
+
+deduplicated = db.deduplicated.insert_many(new_posts)
+
+for r in db.deduplicated.find():
     key = list(r.values())
     key.remove(key[0])
     key = ''.join(key)
-    db.second_table.update_one({'_id': r['_id']},{'$set': {'key': key}}, upsert=False)
+    db.deduplicated.update_one({'_id': r['_id']},{'$set': {'key': key}}, upsert=False)
 
 
 def similar(a, b):
@@ -373,36 +458,44 @@ def similar(a, b):
 
 
 deleted_ids = []
-for r1 in db.second_table.find():
+for r1 in db.deduplicated.find():
     if r1['_id'] not in deleted_ids:
 
-        for r2 in db.second_table.find():
+        for r2 in db.deduplicated.find():
 
             if r1['_id'] != r2['_id'] and similar(r1['key'],r2['key']) > 0.85 and r2['_id'] not in deleted_ids:
 
                     #print(r1['key'], "\n", "\n", r2['key'], "\n", "\n", "\n")
                     deleted_ids.append(r2['_id'])
-                    db.second_table.delete_one({'_id': r2['_id']})
+                    db.deduplicated.delete_one({'_id': r2['_id']})
+
+for r in db.deduplicated.find():
+    db.deduplicated.update_one({'_id': r['_id']}, {'$unset': {'key': "1"}})
+
 
 print("Similar rows deleted...")
 
 
 # Calcul des dépendances fonctionnelles
 
-dependences = np.empty([nb_col+1, nb_col+1])
+new_posts = []
 
-r = db.second_table.find_one()
+#dependences = np.empty([nb_col+1, nb_col+1])
+
+r = db.deduplicated.find_one()
 columns = list(r.keys())
 columns.remove(columns[0])
-columns.remove(columns[20])
+columns.remove(columns[19])
 
 for i, c1 in enumerate(columns):
     for j, c2 in enumerate(columns):
 
+
+
         pairs = []
         n = 0
 
-        for r in db.second_table.find():
+        for r in db.deduplicated.find():
             if r[c1] != "" or r[c2] != "":
 
                 n += 1
@@ -411,8 +504,11 @@ for i, c1 in enumerate(columns):
         df = pd.DataFrame(pairs, columns =['col1', 'col2'])
         n_col1_df = df.groupby("col1")["col2"].count()
         pairs = n_col1_df.values.tolist()
-        dependences[i][j] = round((pairs.count(1)/(n)) * 100 ,2 )
+        new_posts.append({"col_A": c1, "col_B": c2, "DF": round((pairs.count(1)/(n)) * 100 ,2 )})
+        #dependences[i][j] = round((pairs.count(1)/(n)) * 100 ,2 )
 
-print(dependences)
+#print(dependences)
+
+db.dependencies.insert_many(new_posts)
 
 print("Data processing completed successfully!")
